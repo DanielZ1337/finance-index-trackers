@@ -18,10 +18,16 @@ import {
     AlertCircle,
     CheckCircle,
     Loader2,
-    Github
+    Github,
+    Smartphone,
+    Monitor,
+    Tablet,
+    Globe,
+    LogOut
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { AuthenticatedLayout } from '@/components/authenticated-layout';
+import { useSessions } from '@/hooks/use-sessions';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -32,6 +38,16 @@ export default function ProfilePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState<'success' | 'error'>('success');
+
+    // Session management
+    const {
+        sessions,
+        loading: sessionsLoading,
+        error: sessionsError,
+        refetch: refetchSessions,
+        revokeSession,
+        revokeAllOtherSessions
+    } = useSessions();
 
     if (isPending) {
         return (
@@ -80,6 +96,39 @@ export default function ProfilePage() {
             setMessageType('error');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleRevokeSession = async (sessionToken: string) => {
+        const result = await revokeSession(sessionToken);
+        if (result.success) {
+            setMessage('Session terminated successfully');
+            setMessageType('success');
+        } else {
+            setMessage(result.error || 'Failed to terminate session');
+            setMessageType('error');
+        }
+    };
+
+    const handleRevokeAllOtherSessions = async () => {
+        const result = await revokeAllOtherSessions();
+        if (result.success) {
+            setMessage('All other sessions have been terminated');
+            setMessageType('success');
+        } else {
+            setMessage(result.error || 'Failed to terminate sessions');
+            setMessageType('error');
+        }
+    };
+
+    const getDeviceIcon = (deviceType: string) => {
+        switch (deviceType.toLowerCase()) {
+            case 'mobile':
+                return <Smartphone className="h-5 w-5" />;
+            case 'tablet':
+                return <Tablet className="h-5 w-5" />;
+            default:
+                return <Monitor className="h-5 w-5" />;
         }
     };
 
@@ -317,35 +366,115 @@ export default function ProfilePage() {
                     <TabsContent value="sessions" className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Active Sessions</CardTitle>
-                                <CardDescription>
-                                    Manage and monitor your active sessions across devices
-                                </CardDescription>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Active Sessions</CardTitle>
+                                        <CardDescription>
+                                            Manage and monitor your active sessions across devices
+                                        </CardDescription>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={refetchSessions}
+                                        disabled={sessionsLoading}
+                                    >
+                                        {sessionsLoading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            'Refresh'
+                                        )}
+                                    </Button>
+                                </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <Shield className="h-5 w-5" />
-                                            <div>
-                                                <p className="font-medium">Current Session</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Chrome on Windows • Active now
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Badge>Current</Badge>
-                                    </div>
+                                {sessionsError && (
+                                    <Alert variant="destructive" className="mb-4">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertDescription>{sessionsError}</AlertDescription>
+                                    </Alert>
+                                )}
 
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm text-muted-foreground">
-                                            You have 1 active session
-                                        </p>
-                                        <Button variant="outline" size="sm">
-                                            Sign out all devices
-                                        </Button>
+                                {sessionsLoading ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <Loader2 className="h-8 w-8 animate-spin" />
                                     </div>
-                                </div>
+                                ) : sessions.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                        <p>No active sessions found</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {sessions.map((deviceSession) => (
+                                            <div
+                                                key={deviceSession.id}
+                                                className={`flex items-center justify-between p-4 border rounded-lg ${deviceSession.isCurrent ? 'border-primary bg-primary/5' : ''
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {getDeviceIcon(deviceSession.device?.type || 'desktop')}
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-medium">
+                                                                {deviceSession.device?.browser || 'Unknown Browser'} on {deviceSession.device?.os || 'Unknown OS'}
+                                                            </p>
+                                                            {deviceSession.isCurrent && (
+                                                                <Badge variant="secondary" className="text-xs">
+                                                                    Current
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                                            <span>
+                                                                Last active: {formatDistanceToNow(deviceSession.updatedAt, { addSuffix: true })}
+                                                            </span>
+                                                            {deviceSession.ipAddress && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <Globe className="h-3 w-3" />
+                                                                    IP: {deviceSession.ipAddress.slice(0, 8)}...
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {!deviceSession.isCurrent && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleRevokeSession(deviceSession.token)}
+                                                            className="text-destructive hover:text-destructive"
+                                                        >
+                                                            <LogOut className="h-4 w-4 mr-1" />
+                                                            Revoke
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <div className="flex items-center justify-between pt-4 border-t">
+                                            <div className="text-sm text-muted-foreground">
+                                                {sessions.length} active session{sessions.length !== 1 ? 's' : ''}
+                                                {sessions.filter(s => !s.isCurrent).length > 0 && (
+                                                    <span> • {sessions.filter(s => !s.isCurrent).length} other device{sessions.filter(s => !s.isCurrent).length !== 1 ? 's' : ''}</span>
+                                                )}
+                                            </div>
+                                            {sessions.filter(s => !s.isCurrent).length > 0 && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={handleRevokeAllOtherSessions}
+                                                    className="text-destructive hover:text-destructive"
+                                                >
+                                                    <LogOut className="h-4 w-4 mr-1" />
+                                                    Sign out all other devices
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>

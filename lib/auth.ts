@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { multiSession } from "better-auth/plugins";
 import { db } from "@/lib/db";
 
 export const auth = betterAuth({
@@ -19,4 +20,7 @@ export const auth = betterAuth({
         expiresIn: 60 * 60 * 24 * 7, // 7 days
         updateAge: 60 * 60 * 24, // 1 day (session will be updated if user is active after 1 day)
     },
+    plugins: [
+        multiSession(),
+    ],
 });
