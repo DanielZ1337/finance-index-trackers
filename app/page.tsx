@@ -1,85 +1,160 @@
 'use client';
 
-import { useState } from 'react';
-import { useDebounce } from '@uidotdev/usehooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { SearchFilters } from '@/components/dashboard/search-filters';
-import { IndicatorCard } from '@/components/dashboard/indicator-card';
-import { IndicatorDetailView } from '@/components/dashboard/indicator-detail-view';
-import { AnalyticsOverview } from '@/components/dashboard/analytics-overview';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { useIndicators, useIndicatorDetail, useAnalytics } from '@/hooks/use-indicators';
-import { Loader2 } from 'lucide-react';
-import type {
-  IndicatorWithLatestData,
-  Indicator,
-  IndicatorData,
-  SortField,
-  SortDirection
-} from '@/types';
+import { LoadingOverlay } from '@/components/ui/loading-overlay';
+import { AuthenticatedLayout } from '@/components/authenticated-layout';
+import { useSession } from '@/lib/auth-client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendingUp, BarChart3, Users, Activity } from 'lucide-react';
+import Link from 'next/link';
+import {
+  DashboardHeader,
+  IndicatorsTab,
+  AnalyticsTab,
+  IndicatorDetailModal,
+} from '@/components/dashboard';
+import { useDashboard } from '@/hooks/use-dashboard';
 
 export default function DashboardPage() {
-  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
+  const { data: session, isPending } = useSession();
 
-  // Filters - separate immediate input state from debounced search state
-  const [searchInput, setSearchInput] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortBy, setSortBy] = useState<SortField>('view_count');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-
-  // Debounce the search input with 300ms delay
-  const debouncedSearchQuery = useDebounce(searchInput, 300);
-
-  // React Query hooks - use debounced search query for API calls
   const {
-    data: indicators = [],
-    isLoading: loadingIndicators,
-    error: indicatorsError
-  } = useIndicators({
-    category: selectedCategory,
-    search: debouncedSearchQuery, // Use debounced value for API calls
+    // State
+    searchInput,
+    setSearchInput,
+    selectedCategory,
+    setSelectedCategory,
     sortBy,
-    sortDir: sortDirection,
-  });
+    setSortBy,
+    sortDirection,
+    setSortDirection,
 
-  const { data: analytics, isLoading: loadingAnalytics } = useAnalytics();
+    // Data
+    indicators,
+    loadingIndicators,
+    indicatorsError,
+    analytics,
+    loadingAnalytics,
+    selectedIndicator,
+    loadingDetail,
 
-  const {
-    data: indicatorDetail,
-    isLoading: loadingDetail
-  } = useIndicatorDetail(selectedIndicatorId);
+    // Handlers
+    handleViewDetails,
+    handleCloseDetail,
+  } = useDashboard();
 
-  // Handle indicator detail view
-  const handleViewDetails = (indicator: IndicatorWithLatestData) => {
-    setSelectedIndicatorId(indicator.id);
-  };
+  // Show landing page for non-authenticated users
+  if (!isPending && !session) {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden">
+          <div className="container mx-auto px-4 py-16 lg:py-24">
+            <div className="text-center space-y-8">
+              <div className="space-y-4">
+                <h1 className="text-4xl font-bold tracking-tight lg:text-6xl">
+                  Finance Index Tracker
+                </h1>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                  Track and analyze financial indices with comprehensive data insights,
+                  real-time updates, and powerful analytics tools.
+                </p>
+              </div>
 
-  const handleCloseDetail = () => {
-    setSelectedIndicatorId(null);
-  };
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button asChild size="lg">
+                  <Link href="/sign-in">Get Started</Link>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <Link href="/sign-up">Sign Up</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-  // Create selectedIndicator object for compatibility with existing component
-  const selectedIndicator = indicatorDetail ? {
-    indicator: indicatorDetail.indicator,
-    data: indicatorDetail.data,
-  } : null;
-
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">
-              Finance Index Trackers
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Monitor market sentiment, volatility, and key financial indicators
+        {/* Features Section */}
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Why Choose Our Platform?</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Get comprehensive insights into financial markets with our advanced tracking and analytics tools.
             </p>
           </div>
-          <ThemeToggle />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="text-center">
+                <TrendingUp className="h-12 w-12 mx-auto text-primary mb-4" />
+                <CardTitle>Real-time Tracking</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Monitor financial indices with live data updates and real-time price movements.
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="text-center">
+                <BarChart3 className="h-12 w-12 mx-auto text-primary mb-4" />
+                <CardTitle>Advanced Analytics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Comprehensive analytics with charts, trends, and detailed performance metrics.
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="text-center">
+                <Users className="h-12 w-12 mx-auto text-primary mb-4" />
+                <CardTitle>User Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Secure authentication with profile management and personalized settings.
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="text-center">
+                <Activity className="h-12 w-12 mx-auto text-primary mb-4" />
+                <CardTitle>Performance Insights</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Deep insights into market performance with historical data and predictions.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
         </div>
+
+        {/* CTA Section */}
+        <div className="bg-muted/50 py-16">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+            <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Join thousands of users who trust our platform for their financial tracking needs.
+            </p>
+            <Button asChild size="lg">
+              <Link href="/sign-up">Create Your Account</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show dashboard for authenticated users
+  return (
+    <AuthenticatedLayout title="Dashboard">
+      <div className="container mx-auto px-4 py-8">
+        <DashboardHeader />
 
         {/* Main Content */}
         <Tabs defaultValue="indicators" className="space-y-6">
@@ -88,93 +163,44 @@ export default function DashboardPage() {
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="indicators" className="space-y-6">
-            {/* Search and Filters */}
-            <Card>
-              <CardContent className="p-6">
-                <SearchFilters
-                  searchQuery={searchInput}
-                  onSearchChange={setSearchInput}
-                  selectedCategory={selectedCategory}
-                  onCategoryChange={setSelectedCategory}
-                  sortBy={sortBy}
-                  onSortByChange={setSortBy}
-                  sortDirection={sortDirection}
-                  onSortDirectionChange={setSortDirection}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Indicators Grid */}
-            {loadingIndicators ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="ml-2 text-lg">Loading indicators...</span>
-              </div>
-            ) : indicatorsError ? (
-              <div className="text-center py-12">
-                <p className="text-lg text-destructive">
-                  Failed to load indicators. Please try again.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {indicators.length === 0 ? (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-lg text-muted-foreground">
-                      No indicators found matching your criteria.
-                    </p>
-                  </div>
-                ) : (
-                  indicators.map((indicator) => (
-                    <IndicatorCard
-                      key={indicator.id}
-                      indicator={indicator}
-                      onViewDetails={handleViewDetails}
-                    />
-                  ))
-                )}
-              </div>
-            )}
+          <TabsContent value="indicators">
+            <IndicatorsTab
+              searchInput={searchInput}
+              setSearchInput={setSearchInput}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              sortDirection={sortDirection}
+              setSortDirection={setSortDirection}
+              indicators={indicators}
+              loadingIndicators={loadingIndicators}
+              indicatorsError={indicatorsError}
+              onViewDetails={handleViewDetails}
+            />
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            {loadingAnalytics ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="ml-2 text-lg">Loading analytics...</span>
-              </div>
-            ) : analytics ? (
-              <AnalyticsOverview analytics={analytics} />
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-lg text-muted-foreground">
-                  Failed to load analytics data.
-                </p>
-              </div>
-            )}
+          <TabsContent value="analytics">
+            <AnalyticsTab
+              analytics={analytics}
+              loadingAnalytics={loadingAnalytics}
+            />
           </TabsContent>
         </Tabs>
 
         {/* Detail View Modal */}
-        {selectedIndicator && (
-          <IndicatorDetailView
-            indicator={selectedIndicator.indicator}
-            data={selectedIndicator.data}
-            onClose={handleCloseDetail}
-          />
-        )}
+        <IndicatorDetailModal
+          indicator={selectedIndicator?.indicator || null}
+          data={selectedIndicator?.data || null}
+          onClose={handleCloseDetail}
+        />
 
         {/* Loading overlay for detail view */}
-        {loadingDetail && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 flex items-center justify-center">
-            <div className="bg-background p-6 rounded-lg shadow-lg">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-              <p>Loading indicator details...</p>
-            </div>
-          </div>
-        )}
+        <LoadingOverlay
+          isVisible={loadingDetail}
+          message="Loading indicator details..."
+        />
       </div>
-    </div>
+    </AuthenticatedLayout>
   );
 }

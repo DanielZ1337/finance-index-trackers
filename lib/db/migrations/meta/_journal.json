@@ -15,6 +15,48 @@
       "when": 1754491369786,
       "tag": "0001_dark_madame_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754496557318,
+      "tag": "0002_narrow_blur",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1754497201232,
+      "tag": "0003_tense_golden_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1754497304161,
+      "tag": "0004_sudden_malice",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1754497391913,
+      "tag": "0005_late_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1754497478146,
+      "tag": "0006_closed_silver_fox",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1754497576636,
+      "tag": "0007_loving_nehzno",
+      "breakpoints": true
     }
   ]
 }
