@@ -15,7 +15,6 @@ export function DashboardHeader() {
                 </p>
             </div>
             <div className="flex items-center gap-2">
-                <AuthButton />
                 <ThemeToggle />
             </div>
         </div>

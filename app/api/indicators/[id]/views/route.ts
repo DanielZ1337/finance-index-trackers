@@ -37,12 +37,13 @@ export async function POST(
         // Hash IP for privacy
         const ipHash = createHash('sha256').update(ip).digest('hex');
 
-        // Record the view
+        // Record the view with session context
         const viewData = {
             indicatorId,
             userId: session?.user?.id || null, // null for anonymous users
             userAgent: JSON.stringify(userAgent), // Store structured user agent data
             ipHash,
+            sessionId: session?.session?.id || null, // Add session ID for tracking
         };
 
         const result = await IndicatorViewsService.recordView(viewData);

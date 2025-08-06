@@ -28,6 +28,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { AuthenticatedLayout } from '@/components/authenticated-layout';
 import { useSessions } from '@/hooks/use-sessions';
+import SessionAnalytics from '@/components/dashboard/session-analytics';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -161,10 +162,11 @@ export default function ProfilePage() {
                 )}
 
                 <Tabs defaultValue="profile" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="profile">Profile</TabsTrigger>
                         <TabsTrigger value="security">Security</TabsTrigger>
                         <TabsTrigger value="sessions">Sessions</TabsTrigger>
+                        <TabsTrigger value="analytics">Analytics</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="profile" className="space-y-6">
@@ -475,6 +477,23 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="analytics" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Shield className="h-5 w-5" />
+                                    Personal Analytics
+                                </CardTitle>
+                                <CardDescription>
+                                    View your personal indicator usage and session analytics
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <SessionAnalytics />
                             </CardContent>
                         </Card>
                     </TabsContent>

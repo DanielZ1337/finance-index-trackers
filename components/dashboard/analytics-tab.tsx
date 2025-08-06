@@ -1,7 +1,9 @@
 'use client';
 
 import { AnalyticsOverview } from '@/components/dashboard/analytics-overview';
+import SessionAnalytics from '@/components/dashboard/session-analytics';
 import { Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AnalyticsTabProps {
     analytics: any;
@@ -28,5 +30,20 @@ export function AnalyticsTab({ analytics, loadingAnalytics }: AnalyticsTabProps)
         );
     }
 
-    return <AnalyticsOverview analytics={analytics} />;
+    return (
+        <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="sessions">Session Analytics</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview">
+                <AnalyticsOverview analytics={analytics} />
+            </TabsContent>
+
+            <TabsContent value="sessions">
+                <SessionAnalytics />
+            </TabsContent>
+        </Tabs>
+    );
 }

@@ -44,6 +44,7 @@ export const indicatorViews = pgTable('indicator_views', {
   id: serial('id').primaryKey(),
   indicatorId: text('indicator_id').notNull().references(() => indicators.id),
   userId: text('user_id').references(() => user.id), // Optional - null for anonymous views
+  sessionId: text('session_id').references(() => session.id), // Session tracking
   viewedAt: timestamp('viewed_at', { withTimezone: true }).defaultNow(),
   userAgent: text('user_agent'),
   ipHash: text('ip_hash'),
@@ -52,6 +53,7 @@ export const indicatorViews = pgTable('indicator_views', {
     // Index for analytics queries
     indicatorViewsIdx: index('indicator_views_indicator_idx').on(table.indicatorId),
     timeIdx: index('indicator_views_time_idx').on(table.viewedAt),
+    sessionIdx: index('indicator_views_session_idx').on(table.sessionId),
   };
 });
 
@@ -76,6 +78,10 @@ export const indicatorViewsRelations = relations(indicatorViews, ({ one }) => ({
   user: one(user, {
     fields: [indicatorViews.userId],
     references: [user.id],
+  }),
+  session: one(session, {
+    fields: [indicatorViews.sessionId],
+    references: [session.id],
   }),
 }));
 
