@@ -1,0 +1,28 @@
+name: Data Collection Cron
+
+on:
+  schedule:
+    # Run every 1 hours
+    - cron: '0 */1 * * *'
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  collect-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Run data collection service
+        run: bun run scripts/one-time-collect.ts
+        env:
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.BASE_URL }}
