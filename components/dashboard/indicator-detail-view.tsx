@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Calendar, TrendingUp, BarChart3, Eye, X } from 'lucide-react';
+import { useAutoRecordView } from '@/hooks/use-indicator-views';
+import { RecentViewers } from './recent-viewers';
 import type { Indicator, IndicatorData, TimeRange } from '@/types';
 
 interface IndicatorDetailViewProps {
@@ -37,6 +39,9 @@ const categoryColors = {
 
 export function IndicatorDetailView({ indicator, data, onClose }: IndicatorDetailViewProps) {
     const [selectedRange, setSelectedRange] = useState<TimeRange>('30d');
+
+    // Automatically record view when component mounts
+    const { isRecording } = useAutoRecordView(indicator.id);
 
     const chartData = data
         .slice()
@@ -320,6 +325,8 @@ export function IndicatorDetailView({ indicator, data, onClose }: IndicatorDetai
                                         </div>
                                     </CardContent>
                                 </Card>
+
+                                <RecentViewers indicatorId={indicator.id} className="mt-4" />
                             </TabsContent>
                         </Tabs>
                     </div>

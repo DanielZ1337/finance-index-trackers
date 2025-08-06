@@ -364,6 +364,68 @@ export class IndicatorViewsService {
   }
 
   /**
+   * Get views with user information (for authenticated views)
+   */
+  static async getViewsWithUsers(params?: {
+    indicatorId?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const { indicatorId, limit = 50, offset = 0 } = params || {};
+
+    const conditions = [];
+    if (indicatorId) {
+      conditions.push(eq(schema.indicatorViews.indicatorId, indicatorId));
+    }
+
+    return await db
+      .select({
+        id: schema.indicatorViews.id,
+        indicatorId: schema.indicatorViews.indicatorId,
+        userId: schema.indicatorViews.userId,
+        viewedAt: schema.indicatorViews.viewedAt,
+        userAgent: schema.indicatorViews.userAgent,
+        indicator: {
+          name: schema.indicators.name,
+          category: schema.indicators.category,
+        },
+        user: {
+          id: schema.user.id,
+          name: schema.user.name,
+          email: schema.user.email,
+        }
+      })
+      .from(schema.indicatorViews)
+      .innerJoin(schema.indicators, eq(schema.indicatorViews.indicatorId, schema.indicators.id))
+      .leftJoin(schema.user, eq(schema.indicatorViews.userId, schema.user.id))
+      .where(and(...conditions))
+      .orderBy(desc(schema.indicatorViews.viewedAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  /**
+   * Get view counts by user (for authenticated views only)
+   */
+  static async getViewCountsByUser(limit = 10) {
+    return await db
+      .select({
+        userId: schema.indicatorViews.userId,
+        viewCount: count(schema.indicatorViews.id),
+        user: {
+          name: schema.user.name,
+          email: schema.user.email,
+        }
+      })
+      .from(schema.indicatorViews)
+      .innerJoin(schema.user, eq(schema.indicatorViews.userId, schema.user.id))
+      .where(sql`${schema.indicatorViews.userId} IS NOT NULL`)
+      .groupBy(schema.indicatorViews.userId, schema.user.name, schema.user.email)
+      .orderBy(desc(count(schema.indicatorViews.id)))
+      .limit(limit);
+  }
+
+  /**
    * Get daily view trends using Drizzle ORM
    */
   static async getDailyViewTrends(days = 30) {

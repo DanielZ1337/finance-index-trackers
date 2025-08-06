@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, User, Settings, LogOut } from "lucide-react"
 
-import { useSession } from "@/lib/auth-client"
+import { useSession, signOut } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -48,8 +48,13 @@ export function AppSidebar() {
 
     const handleSignOut = async () => {
         try {
-            // The auth button component handles sign out
-            window.location.href = '/'
+            await signOut({
+                fetchOptions: {
+                    onSuccess: () => {
+                        window.location.href = '/'
+                    },
+                },
+            })
         } catch (error) {
             console.error('Sign out error:', error)
         }
@@ -66,7 +71,7 @@ export function AppSidebar() {
         <Sidebar variant="inset" collapsible="icon">
             <SidebarHeader>
                 <div className="flex items-center gap-2 px-2 py-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                         <Home className="h-4 w-4" />
                     </div>
                     <div className="grid flex-1 text-left text-sm leading-tight">
@@ -98,7 +103,7 @@ export function AppSidebar() {
                 </SidebarGroup>
             </SidebarContent>
 
-            <SidebarSeparator />
+            <SidebarSeparator className="mx-0" />
 
             <SidebarFooter>
                 <SidebarMenu>

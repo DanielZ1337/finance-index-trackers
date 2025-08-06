@@ -1,6 +1,10 @@
 import { IndicatorsService, IndicatorDataService, IndicatorViewsService } from '@/lib/db/queries';
 import { NextRequest, NextResponse } from 'next/server';
 import { subDays, subHours, subYears } from 'date-fns';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { createHash } from 'crypto';
+import { UAParser } from 'ua-parser-js';
 
 export async function GET(
     request: NextRequest,
@@ -11,18 +15,38 @@ export async function GET(
         const range = searchParams.get('range') || '30d';
         const { id } = await params;
 
-        // Track view
-        const userAgent = request.headers.get('user-agent') || '';
+        // Track view with user attribution (if authenticated)
+        const session = await auth.api.getSession({
+            headers: await headers()
+        });
+
+        // Parse user agent for better analytics
+        const userAgentString = request.headers.get('user-agent') || '';
+        const parser = new UAParser(userAgentString);
+        const uaResult = parser.getResult();
+
+        // Create a structured user agent object
+        const userAgent = {
+            browser: `${uaResult.browser.name || 'Unknown'} ${uaResult.browser.version || ''}`.trim(),
+            os: `${uaResult.os.name || 'Unknown'} ${uaResult.os.version || ''}`.trim(),
+            device: uaResult.device.type || 'desktop',
+            raw: userAgentString
+        };
+
+        // Get IP for privacy-preserving hash
         const forwardedFor = request.headers.get('x-forwarded-for') || '';
-        const ipHash = forwardedFor ? Buffer.from(forwardedFor).toString('base64').slice(0, 10) : '';
+        const realIp = request.headers.get('x-real-ip') || '';
+        const clientIp = forwardedFor?.split(',')[0] || realIp || '';
+
+        // Create privacy-preserving IP hash
+        const ipHash = clientIp ? createHash('sha256').update(clientIp).digest('hex').slice(0, 16) : '';
 
         await IndicatorViewsService.recordView({
             indicatorId: id,
-            userAgent,
+            userAgent: JSON.stringify(userAgent), // Store structured user agent data
             ipHash,
-        });
-
-        // Calculate time range
+            userId: session?.user?.id || null, // Associate with user if authenticated
+        });        // Calculate time range
         let startDate: Date | undefined;
         const now = new Date();
 

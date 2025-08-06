@@ -43,6 +43,7 @@ export const indicatorData = pgTable('indicator_data', {
 export const indicatorViews = pgTable('indicator_views', {
   id: serial('id').primaryKey(),
   indicatorId: text('indicator_id').notNull().references(() => indicators.id),
+  userId: text('user_id').references(() => user.id), // Optional - null for anonymous views
   viewedAt: timestamp('viewed_at', { withTimezone: true }).defaultNow(),
   userAgent: text('user_agent'),
   ipHash: text('ip_hash'),
@@ -71,6 +72,10 @@ export const indicatorViewsRelations = relations(indicatorViews, ({ one }) => ({
   indicator: one(indicators, {
     fields: [indicatorViews.indicatorId],
     references: [indicators.id],
+  }),
+  user: one(user, {
+    fields: [indicatorViews.userId],
+    references: [user.id],
   }),
 }));
 
@@ -134,6 +139,7 @@ export const verification = pgTable('verification', {
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  indicatorViews: many(indicatorViews),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
