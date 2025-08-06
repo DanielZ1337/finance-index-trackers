@@ -1,4 +1,4 @@
-import { sql } from '@/lib/database';
+import { IndicatorManager } from '@/lib/indicator-utils';
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -43,12 +43,8 @@ export async function GET() {
         const score = parseInt(latest.value);
         const label = latest.value_classification;
 
-        // Store in new generic indicators table
-        await sql`
-      insert into indicator_data (indicator_id, ts_utc, value, label)
-      values ('crypto-fgi', ${tsUtc}, ${score}, ${label})
-      on conflict (indicator_id, ts_utc) do nothing
-    `;
+        // Store using IndicatorManager
+        await IndicatorManager.storeData('crypto-fgi', tsUtc, score, label);
 
         return NextResponse.json({
             stored: true,

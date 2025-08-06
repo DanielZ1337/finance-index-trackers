@@ -1,4 +1,4 @@
-import { sql } from '@/lib/database';
+import { FgiService, IndicatorDataService } from '@/lib/db/queries';
 import { NextResponse } from 'next/server';
 import { CNNFearGreedResponse } from '@/lib/cnn-types';
 
@@ -39,27 +39,28 @@ export async function GET() {
             throw new Error('No fear and greed data available');
         }
 
-        const tsUtc = new Date(fgiData.timestamp).toISOString();
+        const tsUtc = new Date(fgiData.timestamp);
         const score = Math.round(fgiData.score);
         const label = fgiData.rating;
 
         // Store in legacy table for backward compatibility
-        await sql`
-      insert into fgi_hourly (ts_utc, score, label)
-      values (${tsUtc}, ${score}, ${label})
-      on conflict do nothing
-    `;
+        await FgiService.insertFgiData({
+            tsUtc,
+            score,
+            label,
+        });
 
         // Store in new generic indicators table
-        await sql`
-      insert into indicator_data (indicator_id, ts_utc, value, label)
-      values ('cnn-fgi', ${tsUtc}, ${score}, ${label})
-      on conflict (indicator_id, ts_utc) do nothing
-    `;
+        await IndicatorDataService.insertIndicatorData({
+            indicatorId: 'cnn-fgi',
+            tsUtc,
+            value: score.toString(),
+            label,
+        });
 
         return NextResponse.json({
             stored: true,
-            ts: tsUtc,
+            ts: tsUtc.toISOString(),
             score,
             label
         });

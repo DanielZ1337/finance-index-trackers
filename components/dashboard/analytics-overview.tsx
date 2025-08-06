@@ -1,8 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Bar, BarChart, XAxis, CartesianGrid, Line, LineChart, Pie, PieChart, Cell } from 'recharts';
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { TrendingUp, Eye, Activity, Database } from 'lucide-react';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface AnalyticsOverviewProps {
     analytics: {
@@ -111,23 +113,61 @@ export function AnalyticsOverview({ analytics }: AnalyticsOverviewProps) {
                 <Card>
                     <CardHeader>
                         <CardTitle>Most Popular Indicators</CardTitle>
+                        <CardDescription>
+                            Top performing indicators by view count
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={topIndicators.slice(0, 8)}>
-                                <CartesianGrid strokeDasharray="3 3" />
+                        <ChartContainer
+                            config={{
+                                views: {
+                                    label: "Views",
+                                    color: "var(--chart-1)",
+                                },
+                            } satisfies ChartConfig}
+                            className="h-[300px]"
+                        >
+                            <BarChart
+                                accessibilityLayer
+                                data={topIndicators.slice(0, 8)}
+                                margin={{
+                                    top: 20,
+                                    right: 20,
+                                    bottom: 60,
+                                    left: 20,
+                                }}
+                            >
+                                <CartesianGrid vertical={false} />
                                 <XAxis
                                     dataKey="name"
-                                    tick={{ fontSize: 11 }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
                                     angle={-45}
                                     textAnchor="end"
                                     height={80}
+                                    tick={{ fontSize: 11 }}
                                 />
-                                <YAxis tick={{ fontSize: 11 }} />
-                                <Tooltip />
-                                <Bar dataKey="view_count" fill="#2563eb" />
+                                <ChartTooltip
+                                    content={
+                                        <ChartTooltipContent
+                                            className="w-[200px]"
+                                            nameKey="views"
+                                            labelFormatter={(value) => `${value}`}
+                                            formatter={(value) => [
+                                                Number(value).toLocaleString(),
+                                                "Views"
+                                            ]}
+                                        />
+                                    }
+                                />
+                                <Bar
+                                    dataKey="view_count"
+                                    fill="var(--color-views)"
+                                    radius={[4, 4, 0, 0]}
+                                />
                             </BarChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
 
@@ -135,23 +175,58 @@ export function AnalyticsOverview({ analytics }: AnalyticsOverviewProps) {
                 <Card>
                     <CardHeader>
                         <CardTitle>Daily View Trends</CardTitle>
+                        <CardDescription>
+                            Views over the last 7 days
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={dailyTrendsChart}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} />
-                                <Tooltip />
+                        <ChartContainer
+                            config={{
+                                views: {
+                                    label: "Views",
+                                    color: "var(--chart-2)",
+                                },
+                            } satisfies ChartConfig}
+                            className="h-[300px]"
+                        >
+                            <LineChart
+                                accessibilityLayer
+                                data={dailyTrendsChart}
+                                margin={{
+                                    left: 12,
+                                    right: 12,
+                                }}
+                            >
+                                <CartesianGrid vertical={false} />
+                                <XAxis
+                                    dataKey="date"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
+                                    tick={{ fontSize: 11 }}
+                                />
+                                <ChartTooltip
+                                    content={
+                                        <ChartTooltipContent
+                                            className="w-[150px]"
+                                            nameKey="views"
+                                            labelFormatter={(value) => `${value}`}
+                                            formatter={(value) => [
+                                                Number(value).toLocaleString(),
+                                                "Views"
+                                            ]}
+                                        />
+                                    }
+                                />
                                 <Line
-                                    type="monotone"
                                     dataKey="views"
-                                    stroke="#2563eb"
+                                    type="monotone"
+                                    stroke="var(--color-views)"
                                     strokeWidth={2}
-                                    dot={{ fill: '#2563eb' }}
+                                    dot={false}
                                 />
                             </LineChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
 
@@ -159,27 +234,61 @@ export function AnalyticsOverview({ analytics }: AnalyticsOverviewProps) {
                 <Card>
                     <CardHeader>
                         <CardTitle>Category Distribution</CardTitle>
+                        <CardDescription>
+                            Views breakdown by indicator category
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ChartContainer
+                            config={{
+                                views: {
+                                    label: "Views",
+                                },
+                                sentiment: {
+                                    label: "Sentiment",
+                                    color: "var(--chart-1)",
+                                },
+                                crypto: {
+                                    label: "Crypto",
+                                    color: "var(--chart-2)",
+                                },
+                                volatility: {
+                                    label: "Volatility",
+                                    color: "var(--chart-3)",
+                                },
+                                valuation: {
+                                    label: "Valuation",
+                                    color: "var(--chart-4)",
+                                },
+                                other: {
+                                    label: "Other",
+                                    color: "var(--chart-5)",
+                                },
+                            } satisfies ChartConfig}
+                            className="mx-auto aspect-square max-h-[300px]"
+                        >
                             <PieChart>
+                                <ChartTooltip
+                                    content={<ChartTooltipContent hideLabel />}
+                                />
                                 <Pie
                                     data={categoryChart}
+                                    dataKey="value"
+                                    nameKey="name"
                                     cx="50%"
                                     cy="50%"
-                                    labelLine={false}
-                                    label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
                                     outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
                                 >
                                     {categoryChart.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Pie>
-                                <Tooltip formatter={(value, name) => [Number(value).toLocaleString() + ' views', name]} />
+                                <ChartLegend
+                                    content={<ChartLegendContent />}
+                                />
                             </PieChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
 
@@ -189,27 +298,29 @@ export function AnalyticsOverview({ analytics }: AnalyticsOverviewProps) {
                         <CardTitle>Data Freshness</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-2 max-h-[300px] overflow-auto">
-                            {dataFreshness.slice(0, 10).map((indicator) => (
-                                <div key={indicator.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{indicator.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {indicator.data_points} data points
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        {indicator.last_update ? (
+                        <ScrollArea className="h-[300px]">
+                            <div className="space-y-2 pr-4">
+                                {dataFreshness.slice(0, 10).map((indicator) => (
+                                    <div key={indicator.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium truncate">{indicator.name}</p>
                                             <p className="text-xs text-muted-foreground">
-                                                {new Date(indicator.last_update).toLocaleDateString()}
+                                                {indicator.data_points} data points
                                             </p>
-                                        ) : (
-                                            <p className="text-xs text-red-500">No data</p>
-                                        )}
+                                        </div>
+                                        <div className="text-right">
+                                            {indicator.last_update ? (
+                                                <p className="text-xs text-muted-foreground">
+                                                    {new Date(indicator.last_update).toLocaleDateString()}
+                                                </p>
+                                            ) : (
+                                                <p className="text-xs text-red-500">No data</p>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
                     </CardContent>
                 </Card>
             </div>

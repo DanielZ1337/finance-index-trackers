@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useDebounce } from '@uidotdev/usehooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { SearchFilters } from '@/components/dashboard/search-filters';
 import { IndicatorCard } from '@/components/dashboard/indicator-card';
 import { IndicatorDetailView } from '@/components/dashboard/indicator-detail-view';
 import { AnalyticsOverview } from '@/components/dashboard/analytics-overview';
+import { useIndicators, useIndicatorDetail, useAnalytics } from '@/hooks/use-indicators';
 import { Loader2 } from 'lucide-react';
 import type {
   IndicatorWithLatestData,
@@ -17,86 +19,50 @@ import type {
 } from '@/types';
 
 export default function DashboardPage() {
-  const [indicators, setIndicators] = useState<IndicatorWithLatestData[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [selectedIndicator, setSelectedIndicator] = useState<{
-    indicator: Indicator;
-    data: IndicatorData[];
-  } | null>(null);
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  // Filters - separate immediate input state from debounced search state
+  const [searchInput, setSearchInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState<SortField>('view_count');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // Loading states
-  const [loadingIndicators, setLoadingIndicators] = useState(true);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  // Debounce the search input with 300ms delay
+  const debouncedSearchQuery = useDebounce(searchInput, 300);
 
-  // Fetch indicators
-  useEffect(() => {
-    async function fetchIndicators() {
-      setLoadingIndicators(true);
-      try {
-        const params = new URLSearchParams();
-        if (selectedCategory !== 'all') params.set('category', selectedCategory);
-        if (searchQuery) params.set('search', searchQuery);
-        params.set('sortBy', sortBy);
-        params.set('sortDir', sortDirection);
+  // React Query hooks - use debounced search query for API calls
+  const {
+    data: indicators = [],
+    isLoading: loadingIndicators,
+    error: indicatorsError
+  } = useIndicators({
+    category: selectedCategory,
+    search: debouncedSearchQuery, // Use debounced value for API calls
+    sortBy,
+    sortDir: sortDirection,
+  });
 
-        const response = await fetch(`/api/indicators?${params}`);
-        const data = await response.json();
-        setIndicators(data);
-      } catch (error) {
-        console.error('Failed to fetch indicators:', error);
-      } finally {
-        setLoadingIndicators(false);
-      }
-    }
+  const { data: analytics, isLoading: loadingAnalytics } = useAnalytics();
 
-    fetchIndicators();
-  }, [selectedCategory, searchQuery, sortBy, sortDirection]);
-
-  // Fetch analytics
-  useEffect(() => {
-    async function fetchAnalytics() {
-      setLoadingAnalytics(true);
-      try {
-        const response = await fetch('/api/analytics');
-        const data = await response.json();
-        setAnalytics(data);
-      } catch (error) {
-        console.error('Failed to fetch analytics:', error);
-      } finally {
-        setLoadingAnalytics(false);
-      }
-    }
-
-    fetchAnalytics();
-  }, []);
+  const {
+    data: indicatorDetail,
+    isLoading: loadingDetail
+  } = useIndicatorDetail(selectedIndicatorId);
 
   // Handle indicator detail view
-  const handleViewDetails = async (indicator: IndicatorWithLatestData) => {
-    setLoadingDetail(true);
-    try {
-      const response = await fetch(`/api/indicators/${indicator.id}?range=30d`);
-      const data = await response.json();
-      setSelectedIndicator({
-        indicator: data.indicator,
-        data: data.data,
-      });
-    } catch (error) {
-      console.error('Failed to fetch indicator details:', error);
-    } finally {
-      setLoadingDetail(false);
-    }
+  const handleViewDetails = (indicator: IndicatorWithLatestData) => {
+    setSelectedIndicatorId(indicator.id);
   };
 
   const handleCloseDetail = () => {
-    setSelectedIndicator(null);
+    setSelectedIndicatorId(null);
   };
+
+  // Create selectedIndicator object for compatibility with existing component
+  const selectedIndicator = indicatorDetail ? {
+    indicator: indicatorDetail.indicator,
+    data: indicatorDetail.data,
+  } : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,8 +89,8 @@ export default function DashboardPage() {
             <Card>
               <CardContent className="p-6">
                 <SearchFilters
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
+                  searchQuery={searchInput}
+                  onSearchChange={setSearchInput}
                   selectedCategory={selectedCategory}
                   onCategoryChange={setSelectedCategory}
                   sortBy={sortBy}
@@ -140,6 +106,12 @@ export default function DashboardPage() {
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin" />
                 <span className="ml-2 text-lg">Loading indicators...</span>
+              </div>
+            ) : indicatorsError ? (
+              <div className="text-center py-12">
+                <p className="text-lg text-destructive">
+                  Failed to load indicators. Please try again.
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

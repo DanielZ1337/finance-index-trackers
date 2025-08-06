@@ -1,67 +1,71 @@
-import { sql } from '@/lib/database';
+import { getIndicators } from '@/lib/server-data';
 import { NextRequest, NextResponse } from 'next/server';
-import type { IndicatorWithLatestData } from '@/types';
+import type { IndicatorWithLatestData, SortField, SortDirection } from '@/types';
 
 export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const search = searchParams.get('search');
-    const sortBy = searchParams.get('sortBy') || 'view_count';
-    const sortDir = searchParams.get('sortDir') || 'desc';
+    try {
+        const { searchParams } = new URL(request.url);
+        const category = searchParams.get('category') || undefined;
+        const search = searchParams.get('search') || undefined;
+        const sortBy = (searchParams.get('sortBy') || 'view_count') as SortField;
+        const sortDirection = (searchParams.get('sortDir') || 'desc') as SortDirection;
 
-    let query = `
-    select 
-      i.*,
-      latest.value as latest_value,
-      latest.label as latest_label,
-      latest.ts_utc as latest_ts,
-      coalesce(data_counts.count, 0) as data_count,
-      coalesce(view_counts.count, 0) as view_count
-    from indicators i
-    left join lateral (
-      select value, label, ts_utc
-      from indicator_data id
-      where id.indicator_id = i.id
-      order by ts_utc desc
-      limit 1
-    ) latest on true
-    left join (
-      select indicator_id, count(*) as count
-      from indicator_data
-      group by indicator_id
-    ) data_counts on data_counts.indicator_id = i.id
-    left join (
-      select indicator_id, count(*) as count
-      from indicator_views
-      where viewed_at > now() - interval '30 days'
-      group by indicator_id
-    ) view_counts on view_counts.indicator_id = i.id
-    where i.is_active = true
-  `;
+        // Use the comprehensive query with latest data and view counts
+        const indicators = await getIndicators();
 
-    const params: any[] = [];
-    let paramIndex = 1;
+        // TODO: Apply client-side filters for category and search if needed
+        let filteredIndicators = indicators;
 
-    if (category) {
-        query += ` and i.category = $${paramIndex}`;
-        params.push(category);
-        paramIndex++;
+        if (category) {
+            filteredIndicators = filteredIndicators.filter(ind => ind.category === category);
+        }
+
+        if (search) {
+            const searchLower = search.toLowerCase();
+            filteredIndicators = filteredIndicators.filter(ind =>
+                ind.name.toLowerCase().includes(searchLower) ||
+                ind.description?.toLowerCase().includes(searchLower)
+            );
+        }
+
+        // Apply sorting
+        filteredIndicators.sort((a, b) => {
+            let aVal, bVal;
+            switch (sortBy) {
+                case 'view_count':
+                    aVal = a.view_count || 0;
+                    bVal = b.view_count || 0;
+                    break;
+                case 'name':
+                    aVal = a.name;
+                    bVal = b.name;
+                    break;
+                case 'latest_value':
+                    aVal = a.latest_value || 0;
+                    bVal = b.latest_value || 0;
+                    break;
+                case 'latest_ts':
+                    aVal = a.latest_ts ? new Date(a.latest_ts) : new Date(0);
+                    bVal = b.latest_ts ? new Date(b.latest_ts) : new Date(0);
+                    break;
+                default:
+                    aVal = a.view_count || 0;
+                    bVal = b.view_count || 0;
+            }
+
+            if (sortDirection === 'desc') {
+                return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+            } else {
+                return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+            }
+        });
+
+        return NextResponse.json(filteredIndicators);
+    } catch (error) {
+        console.error('Error fetching indicators:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch indicators' },
+            { status: 500 }
+        );
     }
-
-    if (search) {
-        query += ` and (i.name ilike $${paramIndex} or i.description ilike $${paramIndex})`;
-        params.push(`%${search}%`);
-        paramIndex++;
-    }
-
-    // Add sorting
-    const validSorts = ['name', 'category', 'latest_value', 'view_count', 'latest_ts'];
-    const sortField = validSorts.includes(sortBy) ? sortBy : 'view_count';
-    const sortDirection = sortDir === 'asc' ? 'asc' : 'desc';
-
-    query += ` order by ${sortField} ${sortDirection} nulls last`;
-
-    const result = await sql.query(query, params);
-
-    return NextResponse.json(result.rows as IndicatorWithLatestData[]);
 }

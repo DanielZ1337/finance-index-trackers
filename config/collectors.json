@@ -1,0 +1,50 @@
+{
+  "collectors": [
+    {
+      "id": "cnn-fgi",
+      "name": "CNN Fear & Greed Index",
+      "description": "Market sentiment indicator from CNN",
+      "endpoint": "/api/fgi/collect",
+      "enabled": true,
+      "category": "sentiment",
+      "source": "CNN",
+      "frequency": "hourly"
+    },
+    {
+      "id": "crypto-fgi",
+      "name": "Crypto Fear & Greed Index", 
+      "description": "Cryptocurrency market sentiment from Alternative.me",
+      "endpoint": "/api/crypto-fgi/collect",
+      "enabled": true,
+      "category": "crypto",
+      "source": "Alternative.me",
+      "frequency": "hourly"
+    },
+    {
+      "id": "vix",
+      "name": "VIX Volatility Index",
+      "description": "Market volatility and fear gauge (mock data)",
+      "endpoint": "/api/vix/collect",
+      "enabled": true,
+      "category": "volatility", 
+      "source": "Mock/CBOE",
+      "frequency": "hourly"
+    },
+    {
+      "id": "cnn-indicators",
+      "name": "CNN Market Indicators",
+      "description": "Multiple CNN market indicators (momentum, strength, etc.)",
+      "endpoint": "/api/cnn-indicators/collect",
+      "enabled": true,
+      "category": "multi",
+      "source": "CNN",
+      "frequency": "hourly"
+    }
+  ],
+  "settings": {
+    "defaultFrequency": "hourly",
+    "requestDelay": 1000,
+    "timeout": 30000,
+    "retries": 2
+  }
+}

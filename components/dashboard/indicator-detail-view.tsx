@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import { format, parseISO } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, TrendingUp, BarChart3, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Calendar, TrendingUp, BarChart3, Eye, X } from 'lucide-react';
 import type { Indicator, IndicatorData, TimeRange } from '@/types';
 
 interface IndicatorDetailViewProps {
@@ -82,7 +84,7 @@ export function IndicatorDetailView({ indicator, data, onClose }: IndicatorDetai
                                 </div>
                             </div>
                             <Button variant="ghost" onClick={onClose}>
-                                ✕
+                                <X className="h-4 w-4" />
                             </Button>
                         </div>
 
@@ -133,56 +135,103 @@ export function IndicatorDetailView({ indicator, data, onClose }: IndicatorDetai
 
                             <TabsContent value="chart" className="p-6">
                                 {/* Time Range Selector */}
-                                <div className="mb-4 flex space-x-2">
-                                    {timeRanges.map((range) => (
-                                        <Button
-                                            key={range.value}
-                                            variant={selectedRange === range.value ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setSelectedRange(range.value)}
-                                        >
-                                            {range.label}
-                                        </Button>
-                                    ))}
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-semibold">Performance Chart</h3>
+                                    <Select value={selectedRange} onValueChange={(value: TimeRange) => setSelectedRange(value)}>
+                                        <SelectTrigger className="w-32">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {timeRanges.map((range) => (
+                                                <SelectItem key={range.value} value={range.value}>
+                                                    {range.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
-                                {/* Chart */}
+                                {/* Modern Chart */}
                                 <Card>
-                                    <CardContent className="p-6">
-                                        <ResponsiveContainer width="100%" height={400}>
-                                            <LineChart data={chartData}>
-                                                <CartesianGrid strokeDasharray="3 3" />
+                                    <CardHeader className="pb-4">
+                                        <CardTitle className="text-base">
+                                            {indicator.name} Trend
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Showing {chartData.length} data points over the selected time range
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+                                        <ChartContainer
+                                            config={{
+                                                value: {
+                                                    label: indicator.name,
+                                                    color: "var(--chart-1)",
+                                                },
+                                            } satisfies ChartConfig}
+                                            className="aspect-auto h-[400px] w-full"
+                                        >
+                                            <AreaChart
+                                                accessibilityLayer
+                                                data={chartData}
+                                                margin={{
+                                                    top: 20,
+                                                    right: 20,
+                                                    bottom: 20,
+                                                    left: 20,
+                                                }}
+                                            >
+                                                <defs>
+                                                    <linearGradient id="fillValue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop
+                                                            offset="5%"
+                                                            stopColor="var(--color-value)"
+                                                            stopOpacity={0.8}
+                                                        />
+                                                        <stop
+                                                            offset="95%"
+                                                            stopColor="var(--color-value)"
+                                                            stopOpacity={0.1}
+                                                        />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid vertical={false} />
                                                 <XAxis
                                                     dataKey="formattedDate"
-                                                    tick={{ fontSize: 12 }}
-                                                    tickFormatter={(value, index) => {
-                                                        // Show fewer ticks on smaller screens
-                                                        if (chartData.length > 20 && index % Math.ceil(chartData.length / 10) !== 0) {
-                                                            return '';
-                                                        }
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tickMargin={8}
+                                                    minTickGap={32}
+                                                    tickFormatter={(value) => {
+                                                        // Show abbreviated format
                                                         return value;
                                                     }}
                                                 />
-                                                <YAxis tick={{ fontSize: 12 }} />
-                                                <Tooltip
-                                                    formatter={(value, name) => [Number(value).toLocaleString(), 'Value']}
-                                                    labelFormatter={(label, payload) => {
-                                                        if (payload && payload[0]) {
-                                                            return payload[0].payload.fullDate;
-                                                        }
-                                                        return label;
-                                                    }}
+                                                <ChartTooltip
+                                                    cursor={false}
+                                                    content={
+                                                        <ChartTooltipContent
+                                                            labelFormatter={(value) => {
+                                                                const item = chartData.find(d => d.formattedDate === value);
+                                                                return item ? item.fullDate : value;
+                                                            }}
+                                                            formatter={(value) => [
+                                                                Number(value).toLocaleString(),
+                                                                indicator.name
+                                                            ]}
+                                                            indicator="dot"
+                                                        />
+                                                    }
                                                 />
-                                                <Line
-                                                    type="monotone"
+                                                <Area
                                                     dataKey="value"
-                                                    stroke="#2563eb"
+                                                    type="natural"
+                                                    fill="url(#fillValue)"
+                                                    stroke="var(--color-value)"
                                                     strokeWidth={2}
-                                                    dot={{ fill: '#2563eb', strokeWidth: 2, r: 3 }}
-                                                    activeDot={{ r: 5 }}
                                                 />
-                                            </LineChart>
-                                        </ResponsiveContainer>
+                                            </AreaChart>
+                                        </ChartContainer>
                                     </CardContent>
                                 </Card>
                             </TabsContent>

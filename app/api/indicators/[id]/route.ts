@@ -1,97 +1,132 @@
-import { sql } from '@/lib/database';
+import { IndicatorsService, IndicatorDataService, IndicatorViewsService } from '@/lib/db/queries';
 import { NextRequest, NextResponse } from 'next/server';
+import { subDays, subHours, subYears } from 'date-fns';
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const { searchParams } = new URL(request.url);
-    const range = searchParams.get('range') || '30d';
-    const { id } = await params;
+    try {
+        const { searchParams } = new URL(request.url);
+        const range = searchParams.get('range') || '30d';
+        const { id } = await params;
 
-    // Track view
-    const userAgent = request.headers.get('user-agent') || '';
-    const forwardedFor = request.headers.get('x-forwarded-for') || '';
-    const ipHash = forwardedFor ? Buffer.from(forwardedFor).toString('base64').slice(0, 10) : '';
+        // Track view
+        const userAgent = request.headers.get('user-agent') || '';
+        const forwardedFor = request.headers.get('x-forwarded-for') || '';
+        const ipHash = forwardedFor ? Buffer.from(forwardedFor).toString('base64').slice(0, 10) : '';
 
-    await sql`
-    insert into indicator_views (indicator_id, user_agent, ip_hash)
-    values (${id}, ${userAgent}, ${ipHash})
-  `;
+        await IndicatorViewsService.recordView({
+            indicatorId: id,
+            userAgent,
+            ipHash,
+        });
 
-    // Get time range condition
-    let timeCondition = '';
-    switch (range) {
-        case '24h':
-            timeCondition = "and ts_utc > now() - interval '24 hours'";
-            break;
-        case '7d':
-            timeCondition = "and ts_utc > now() - interval '7 days'";
-            break;
-        case '30d':
-            timeCondition = "and ts_utc > now() - interval '30 days'";
-            break;
-        case '90d':
-            timeCondition = "and ts_utc > now() - interval '90 days'";
-            break;
-        case '1y':
-            timeCondition = "and ts_utc > now() - interval '1 year'";
-            break;
-        case 'all':
-            timeCondition = '';
-            break;
+        // Calculate time range
+        let startDate: Date | undefined;
+        const now = new Date();
+
+        switch (range) {
+            case '24h':
+                startDate = subHours(now, 24);
+                break;
+            case '7d':
+                startDate = subDays(now, 7);
+                break;
+            case '30d':
+                startDate = subDays(now, 30);
+                break;
+            case '90d':
+                startDate = subDays(now, 90);
+                break;
+            case '1y':
+                startDate = subYears(now, 1);
+                break;
+            case 'all':
+                startDate = undefined;
+                break;
+        }
+
+        // Get indicator details and data
+        const [indicator, data] = await Promise.all([
+            IndicatorsService.getIndicatorById(id),
+            IndicatorDataService.getIndicatorData(id, {
+                startDate,
+                limit: 1000,
+            })
+        ]);
+
+        if (!indicator || !indicator.isActive) {
+            return NextResponse.json({ error: 'Indicator not found' }, { status: 404 });
+        }
+
+        // Convert Drizzle results to expected format
+        const formattedIndicator = {
+            id: indicator.id,
+            name: indicator.name,
+            description: indicator.description,
+            category: indicator.category,
+            source: indicator.source,
+            is_active: indicator.isActive,
+            created_at: indicator.createdAt,
+        };
+
+        const formattedData = data.map(item => ({
+            ts_utc: item.tsUtc,
+            value: item.value,
+            label: item.label,
+            metadata: item.metadata,
+        }));
+
+        return NextResponse.json({
+            indicator: formattedIndicator,
+            data: formattedData
+        });
+    } catch (error) {
+        console.error('Error fetching indicator details:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch indicator details' },
+            { status: 500 }
+        );
     }
-
-    // Get indicator details and data
-    const [indicatorResult, dataResult] = await Promise.all([
-        sql`
-      select * from indicators 
-      where id = ${id} and is_active = true
-    `,
-        sql.query(`
-      select ts_utc, value, label, metadata
-      from indicator_data
-      where indicator_id = $1 ${timeCondition}
-      order by ts_utc desc
-      limit 1000
-    `, [id])
-    ]);
-
-    if (indicatorResult.rows.length === 0) {
-        return NextResponse.json({ error: 'Indicator not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({
-        indicator: indicatorResult.rows[0],
-        data: dataResult.rows
-    });
 }
 
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await params;
-    const body = await request.json();
-    const { value, label, metadata } = body;
+    try {
+        const { id } = await params;
+        const body = await request.json();
+        const { value, label, metadata } = body;
 
-    if (!value) {
-        return NextResponse.json({ error: 'Value is required' }, { status: 400 });
+        if (!value) {
+            return NextResponse.json({ error: 'Value is required' }, { status: 400 });
+        }
+
+        const timestamp = new Date();
+
+        const result = await IndicatorDataService.insertIndicatorData({
+            indicatorId: id,
+            tsUtc: timestamp,
+            value: value.toString(),
+            label: label || null,
+            metadata: metadata || null,
+        });
+
+        return NextResponse.json({
+            success: true,
+            timestamp,
+            indicator_id: id,
+            value,
+            label,
+            inserted: !!result,
+        });
+    } catch (error) {
+        console.error('Error inserting indicator data:', error);
+        return NextResponse.json(
+            { error: 'Failed to insert indicator data' },
+            { status: 500 }
+        );
     }
-
-    const timestamp = new Date().toISOString();
-
-    await sql`
-    insert into indicator_data (indicator_id, ts_utc, value, label, metadata)
-    values (${id}, ${timestamp}, ${value}, ${label || null}, ${JSON.stringify(metadata || {})})
-    on conflict (indicator_id, ts_utc) do nothing
-  `;
-
-    return NextResponse.json({
-        success: true,
-        timestamp,
-        indicator_id: id,
-        value,
-        label
-    });
 }

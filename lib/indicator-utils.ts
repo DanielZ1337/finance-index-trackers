@@ -1,4 +1,5 @@
-import { sql } from '@/lib/database';
+import { db, schema } from '@/lib/db';
+import { eq, desc, sql, gte, and } from 'drizzle-orm';
 import type { Indicator } from '@/types';
 
 /**
@@ -7,22 +8,32 @@ import type { Indicator } from '@/types';
 
 export class IndicatorManager {
     /**
-     * Add a new indicator to the database
+     * Add a new indicator to the database using Drizzle ORM
      */
     static async addIndicator(indicator: Omit<Indicator, 'created_at' | 'is_active'>) {
-        await sql`
-      insert into indicators (id, name, description, category, source)
-      values (${indicator.id}, ${indicator.name}, ${indicator.description || ''}, ${indicator.category}, ${indicator.source})
-      on conflict (id) do update set
-        name = excluded.name,
-        description = excluded.description,
-        category = excluded.category,
-        source = excluded.source
-    `;
+        await db
+            .insert(schema.indicators)
+            .values({
+                id: indicator.id,
+                name: indicator.name,
+                description: indicator.description || null,
+                category: indicator.category,
+                source: indicator.source,
+                isActive: true,
+            })
+            .onConflictDoUpdate({
+                target: schema.indicators.id,
+                set: {
+                    name: indicator.name,
+                    description: indicator.description || null,
+                    category: indicator.category,
+                    source: indicator.source,
+                }
+            });
     }
 
     /**
-     * Store data for an indicator
+     * Store data for an indicator using Drizzle ORM
      */
     static async storeData(
         indicatorId: string,
@@ -31,63 +42,85 @@ export class IndicatorManager {
         label?: string,
         metadata?: Record<string, any>
     ) {
-        await sql`
-      insert into indicator_data (indicator_id, ts_utc, value, label, metadata)
-      values (${indicatorId}, ${timestamp}, ${value}, ${label || null}, ${JSON.stringify(metadata || {})})
-      on conflict (indicator_id, ts_utc) do nothing
-    `;
+        await db
+            .insert(schema.indicatorData)
+            .values({
+                indicatorId,
+                tsUtc: new Date(timestamp),
+                value: value.toString(),
+                label: label || null,
+                metadata: metadata || null,
+            })
+            .onConflictDoNothing();
     }
 
     /**
-     * Fetch data for an indicator with time range
+     * Fetch data for an indicator with time range using Drizzle ORM
      */
     static async getData(indicatorId: string, range: string = '30d', limit: number = 1000) {
-        let timeCondition = '';
+        const conditions = [eq(schema.indicatorData.indicatorId, indicatorId)];
+
+        // Calculate date based on range
+        const now = new Date();
+        let cutoffDate: Date | null = null;
+
         switch (range) {
             case '24h':
-                timeCondition = "and ts_utc > now() - interval '24 hours'";
+                cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
                 break;
             case '7d':
-                timeCondition = "and ts_utc > now() - interval '7 days'";
+                cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
                 break;
             case '30d':
-                timeCondition = "and ts_utc > now() - interval '30 days'";
+                cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
                 break;
             case '90d':
-                timeCondition = "and ts_utc > now() - interval '90 days'";
+                cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
                 break;
             case '1y':
-                timeCondition = "and ts_utc > now() - interval '1 year'";
+                cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
                 break;
             case 'all':
-                timeCondition = '';
+            default:
+                // No date filter
                 break;
         }
 
-        const result = await sql.query(`
-      select ts_utc, value, label, metadata
-      from indicator_data
-      where indicator_id = $1 ${timeCondition}
-      order by ts_utc desc
-      limit $2
-    `, [indicatorId, limit]);
+        if (cutoffDate) {
+            conditions.push(gte(schema.indicatorData.tsUtc, cutoffDate));
+        }
 
-        return result.rows;
+        const result = await db
+            .select({
+                ts_utc: schema.indicatorData.tsUtc,
+                value: schema.indicatorData.value,
+                label: schema.indicatorData.label,
+                metadata: schema.indicatorData.metadata,
+            })
+            .from(schema.indicatorData)
+            .where(cutoffDate ? and(...conditions, gte(schema.indicatorData.tsUtc, cutoffDate)) : conditions[0])
+            .orderBy(desc(schema.indicatorData.tsUtc))
+            .limit(limit);
+
+        return result;
     }
 
     /**
-     * Get the latest value for an indicator
+     * Get the latest value for an indicator using Drizzle ORM
      */
     static async getLatestValue(indicatorId: string) {
-        const result = await sql`
-      select value, label, ts_utc
-      from indicator_data
-      where indicator_id = ${indicatorId}
-      order by ts_utc desc
-      limit 1
-    `;
+        const result = await db
+            .select({
+                value: schema.indicatorData.value,
+                label: schema.indicatorData.label,
+                ts_utc: schema.indicatorData.tsUtc,
+            })
+            .from(schema.indicatorData)
+            .where(eq(schema.indicatorData.indicatorId, indicatorId))
+            .orderBy(desc(schema.indicatorData.tsUtc))
+            .limit(1);
 
-        return result.rows[0] || null;
+        return result[0] || null;
     }
 }
 

@@ -1,4 +1,4 @@
-import { sql } from '@/lib/database';
+import { IndicatorManager } from '@/lib/indicator-utils';
 import { NextResponse } from 'next/server';
 import { CNNFearGreedResponse } from '@/lib/cnn-types';
 
@@ -95,11 +95,8 @@ export async function GET() {
             const score = Math.round(indicator.data.score);
             const label = indicator.data.rating;
 
-            await sql`
-        insert into indicator_data (indicator_id, ts_utc, value, label)
-        values (${indicator.id}, ${tsUtc}, ${score}, ${label})
-        on conflict (indicator_id, ts_utc) do nothing
-      `;
+            // Store using IndicatorManager
+            await IndicatorManager.storeData(indicator.id, tsUtc, score, label);
 
             results.push({
                 indicator_id: indicator.id,
