@@ -8,6 +8,7 @@ import { SearchFilters } from '@/components/dashboard/search-filters';
 import { IndicatorCard } from '@/components/dashboard/indicator-card';
 import { IndicatorDetailView } from '@/components/dashboard/indicator-detail-view';
 import { AnalyticsOverview } from '@/components/dashboard/analytics-overview';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useIndicators, useIndicatorDetail, useAnalytics } from '@/hooks/use-indicators';
 import { Loader2 } from 'lucide-react';
 import type {
@@ -68,13 +69,16 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight mb-2">
-            Finance Index Trackers
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Monitor market sentiment, volatility, and key financial indicators
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight mb-2">
+              Finance Index Trackers
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Monitor market sentiment, volatility, and key financial indicators
+            </p>
+          </div>
+          <ThemeToggle />
         </div>
 
         {/* Main Content */}
