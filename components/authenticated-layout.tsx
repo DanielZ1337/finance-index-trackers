@@ -7,9 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import {
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+    SidebarInset,
 } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 

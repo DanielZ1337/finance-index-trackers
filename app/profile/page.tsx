@@ -119,235 +119,235 @@ export default function ProfilePage() {
                     </TabsList>
 
                     <TabsContent value="profile" className="space-y-6">
-                            {/* Profile Information */}
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
-                                            {getInitials(session.user.name || 'U')}
-                                        </div>
-                                        <div className="flex-1">
-                                            <h2 className="text-2xl font-bold">{session.user.name}</h2>
-                                            <p className="text-muted-foreground">{session.user.email}</p>
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <Badge variant={session.user.emailVerified ? "default" : "secondary"}>
-                                                    {session.user.emailVerified ? (
-                                                        <>
-                                                            <CheckCircle className="h-3 w-3 mr-1" />
-                                                            Verified
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <AlertCircle className="h-3 w-3 mr-1" />
-                                                            Unverified
-                                                        </>
-                                                    )}
-                                                </Badge>
-                                            </div>
-                                        </div>
+                        {/* Profile Information */}
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center gap-4">
+                                    <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
+                                        {getInitials(session.user.name || 'U')}
                                     </div>
-                                </CardHeader>
-                            </Card>
-
-                            {/* Edit Profile Form */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Personal Information</CardTitle>
-                                    <CardDescription>
-                                        Update your personal details here
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    {message && (
-                                        <Alert variant={messageType === 'error' ? 'destructive' : 'default'} className="mb-6">
-                                            {messageType === 'error' ? (
-                                                <AlertCircle className="h-4 w-4" />
-                                            ) : (
-                                                <CheckCircle className="h-4 w-4" />
-                                            )}
-                                            <AlertDescription>{message}</AlertDescription>
-                                        </Alert>
-                                    )}
-
-                                    <form onSubmit={handleUpdateProfile} className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="name">Full Name</Label>
-                                                <Input
-                                                    id="name"
-                                                    value={name}
-                                                    onChange={(e) => setName(e.target.value)}
-                                                    disabled={isLoading}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="email">Email Address</Label>
-                                                <Input
-                                                    id="email"
-                                                    type="email"
-                                                    value={email}
-                                                    onChange={(e) => setEmail(e.target.value)}
-                                                    disabled={isLoading}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex justify-end">
-                                            <Button type="submit" disabled={isLoading}>
-                                                {isLoading ? (
-                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <div className="flex-1">
+                                        <h2 className="text-2xl font-bold">{session.user.name}</h2>
+                                        <p className="text-muted-foreground">{session.user.email}</p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Badge variant={session.user.emailVerified ? "default" : "secondary"}>
+                                                {session.user.emailVerified ? (
+                                                    <>
+                                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                                        Verified
+                                                    </>
                                                 ) : (
-                                                    <Save className="h-4 w-4 mr-2" />
+                                                    <>
+                                                        <AlertCircle className="h-3 w-3 mr-1" />
+                                                        Unverified
+                                                    </>
                                                 )}
-                                                Save Changes
-                                            </Button>
+                                            </Badge>
                                         </div>
-                                    </form>
-                                </CardContent>
-                            </Card>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                        </Card>
 
-                            {/* Account Details */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Account Details</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <User className="h-4 w-4" />
-                                            <div>
-                                                <p className="font-medium">User ID</p>
-                                                <p className="text-sm text-muted-foreground">{session.user.id}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <Separator />
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <Mail className="h-4 w-4" />
-                                            <div>
-                                                <p className="font-medium">Email Status</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {session.user.emailVerified ? 'Verified' : 'Pending verification'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {!session.user.emailVerified && (
-                                            <Button variant="outline" size="sm">
-                                                Resend Verification
-                                            </Button>
+                        {/* Edit Profile Form */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Personal Information</CardTitle>
+                                <CardDescription>
+                                    Update your personal details here
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {message && (
+                                    <Alert variant={messageType === 'error' ? 'destructive' : 'default'} className="mb-6">
+                                        {messageType === 'error' ? (
+                                            <AlertCircle className="h-4 w-4" />
+                                        ) : (
+                                            <CheckCircle className="h-4 w-4" />
                                         )}
+                                        <AlertDescription>{message}</AlertDescription>
+                                    </Alert>
+                                )}
+
+                                <form onSubmit={handleUpdateProfile} className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="name">Full Name</Label>
+                                            <Input
+                                                id="name"
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email">Email Address</Label>
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                disabled={isLoading}
+                                            />
+                                        </div>
                                     </div>
-                                    <Separator />
+
+                                    <div className="flex justify-end">
+                                        <Button type="submit" disabled={isLoading}>
+                                            {isLoading ? (
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            ) : (
+                                                <Save className="h-4 w-4 mr-2" />
+                                            )}
+                                            Save Changes
+                                        </Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+
+                        {/* Account Details */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Account Details</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <Calendar className="h-4 w-4" />
+                                        <User className="h-4 w-4" />
                                         <div>
-                                            <p className="font-medium">Member Since</p>
+                                            <p className="font-medium">User ID</p>
+                                            <p className="text-sm text-muted-foreground">{session.user.id}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Mail className="h-4 w-4" />
+                                        <div>
+                                            <p className="font-medium">Email Status</p>
                                             <p className="text-sm text-muted-foreground">
-                                                {formatDistanceToNow(new Date(session.user.createdAt), { addSuffix: true })}
+                                                {session.user.emailVerified ? 'Verified' : 'Pending verification'}
                                             </p>
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
+                                    {!session.user.emailVerified && (
+                                        <Button variant="outline" size="sm">
+                                            Resend Verification
+                                        </Button>
+                                    )}
+                                </div>
+                                <Separator />
+                                <div className="flex items-center gap-3">
+                                    <Calendar className="h-4 w-4" />
+                                    <div>
+                                        <p className="font-medium">Member Since</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {formatDistanceToNow(new Date(session.user.createdAt), { addSuffix: true })}
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
 
                     <TabsContent value="security" className="space-y-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Security Settings</CardTitle>
-                                    <CardDescription>
-                                        Manage your account security and authentication methods
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="font-medium">Password</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Change your account password
-                                                </p>
-                                            </div>
-                                            <Button variant="outline">Change Password</Button>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Security Settings</CardTitle>
+                                <CardDescription>
+                                    Manage your account security and authentication methods
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="font-medium">Password</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Change your account password
+                                            </p>
                                         </div>
+                                        <Button variant="outline">Change Password</Button>
+                                    </div>
 
-                                        <Separator />
+                                    <Separator />
 
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="font-medium">Two-Factor Authentication</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Add an extra layer of security to your account
-                                                </p>
-                                            </div>
-                                            <Button variant="outline">Enable 2FA</Button>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="font-medium">Two-Factor Authentication</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Add an extra layer of security to your account
+                                            </p>
                                         </div>
+                                        <Button variant="outline">Enable 2FA</Button>
+                                    </div>
 
-                                        <Separator />
+                                    <Separator />
 
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="font-medium">Connected Accounts</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Manage your connected social accounts
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                                <div className="flex items-center gap-3">
-                                                    <Github className="h-5 w-5" />
-                                                    <div>
-                                                        <p className="font-medium">GitHub</p>
-                                                        <p className="text-sm text-muted-foreground">Connected</p>
-                                                    </div>
-                                                </div>
-                                                <Button variant="outline" size="sm">
-                                                    Disconnect
-                                                </Button>
-                                            </div>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="font-medium">Connected Accounts</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Manage your connected social accounts
+                                            </p>
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
-                    </TabsContent>
 
-                    <TabsContent value="sessions" className="space-y-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Active Sessions</CardTitle>
-                                    <CardDescription>
-                                        Manage and monitor your active sessions across devices
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between p-3 border rounded-lg">
                                             <div className="flex items-center gap-3">
-                                                <Shield className="h-5 w-5" />
+                                                <Github className="h-5 w-5" />
                                                 <div>
-                                                    <p className="font-medium">Current Session</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Chrome on Windows • Active now
-                                                    </p>
+                                                    <p className="font-medium">GitHub</p>
+                                                    <p className="text-sm text-muted-foreground">Connected</p>
                                                 </div>
                                             </div>
-                                            <Badge>Current</Badge>
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm text-muted-foreground">
-                                                You have 1 active session
-                                            </p>
                                             <Button variant="outline" size="sm">
-                                                Sign out all devices
+                                                Disconnect
                                             </Button>
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="sessions" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Active Sessions</CardTitle>
+                                <CardDescription>
+                                    Manage and monitor your active sessions across devices
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <Shield className="h-5 w-5" />
+                                            <div>
+                                                <p className="font-medium">Current Session</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Chrome on Windows • Active now
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Badge>Current</Badge>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm text-muted-foreground">
+                                            You have 1 active session
+                                        </p>
+                                        <Button variant="outline" size="sm">
+                                            Sign out all devices
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 </Tabs>
             </div>
