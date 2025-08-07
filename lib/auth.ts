@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { multiSession } from "better-auth/plugins";
+import { nextCookies } from "better-auth/next-js";
 import { db } from "@/lib/db";
 
 export const auth = betterAuth({
@@ -20,30 +21,27 @@ export const auth = betterAuth({
         expiresIn: 60 * 60 * 24 * 7, // 7 days
         updateAge: 60 * 60 * 24, // 1 day (session will be updated if user is active after 1 day)
     },
+    rateLimit: {
+        enabled: true,
+        window: 60, // 1 minute window
+        max: 100, // 100 requests per window
+        storage: "memory", // Use memory storage for rate limiting
+    },
     advanced: {
-        generateId: () => crypto.randomUUID(),
         crossSubDomainCookies: {
             enabled: false,
         },
         useSecureCookies: process.env.NODE_ENV === "production",
-        getIP: (request: Request) => {
-            // Better IP detection for various hosting environments
-            const forwarded = request.headers.get('x-forwarded-for');
-            const realIp = request.headers.get('x-real-ip');
-            const cfConnectingIp = request.headers.get('cf-connecting-ip');
-            const remoteAddr = request.headers.get('remote-addr');
-
-            // Priority order: CF-Connecting-IP > X-Real-IP > X-Forwarded-For > Remote-Addr
-            const ip = cfConnectingIp ||
-                realIp ||
-                forwarded?.split(',')[0]?.trim() ||
-                remoteAddr ||
-                'unknown';
-
-            return ip;
+        ipAddress: {
+            ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip", "x-client-ip"],
+            disableIpTracking: false
+        },
+        database: {
+            generateId: () => crypto.randomUUID(),
         },
     },
     plugins: [
         multiSession(),
+        nextCookies(), // Must be last plugin for proper cookie handling
     ],
 });

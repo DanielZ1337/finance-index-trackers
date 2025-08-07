@@ -1,38 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSessionCookie } from 'better-auth/cookies';
-
-// Define protected routes
-const protectedRoutes = ['/profile', '/settings', '/dashboard'];
-
-// Define auth routes (should redirect if already signed in)
-const authRoutes = ['/sign-in', '/sign-up'];
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
 
 export async function middleware(request: NextRequest) {
-    const pathname = request.nextUrl.pathname;
-
-    // Check for session cookie using Better Auth's helper
     const sessionCookie = getSessionCookie(request);
-    const hasSession = !!sessionCookie;
+    const { pathname } = request.nextUrl;
 
-    // Check if current path is protected
-    const isProtectedRoute = protectedRoutes.some(route =>
-        pathname.startsWith(route)
-    );
-
-    // Check if current path is auth route
-    const isAuthRoute = authRoutes.some(route =>
-        pathname.startsWith(route)
-    );
-
-    // Redirect to sign-in if accessing protected route without session
-    if (isProtectedRoute && !hasSession) {
-        const signInUrl = new URL('/sign-in', request.url);
-        signInUrl.searchParams.set('callbackUrl', pathname);
-        return NextResponse.redirect(signInUrl);
-    }
-
-    // Redirect to home if accessing auth routes while signed in
-    if (isAuthRoute && hasSession) {
+    // Redirect authenticated users away from auth pages to home page
+    if (sessionCookie && ["/sign-in", "/sign-up"].includes(pathname)) {
         const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
         const redirectUrl = callbackUrl && callbackUrl.startsWith('/')
             ? new URL(callbackUrl, request.url)
@@ -40,19 +14,21 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl);
     }
 
+    // Protect profile and settings routes - redirect to sign-in if no session
+    if (!sessionCookie && (pathname.startsWith("/profile") || pathname.startsWith("/settings"))) {
+        const signInUrl = new URL('/sign-in', request.url);
+        signInUrl.searchParams.set('callbackUrl', pathname);
+        return NextResponse.redirect(signInUrl);
+    }
+
     return NextResponse.next();
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api (API routes)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder files
-         */
-        '/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg$|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.webp$).*)',
+        "/profile/:path*",
+        "/settings/:path*",
+        "/sign-in",
+        "/sign-up"
     ],
 };
