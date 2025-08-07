@@ -44,7 +44,7 @@ export const indicatorViews = pgTable('indicator_views', {
   id: serial('id').primaryKey(),
   indicatorId: text('indicator_id').notNull().references(() => indicators.id),
   userId: text('user_id').references(() => user.id), // Optional - null for anonymous views
-  sessionId: text('session_id').references(() => session.id), // Session tracking
+  sessionId: text('session_id').references(() => session.id, { onDelete: 'set null' }), // Session tracking
   viewedAt: timestamp('viewed_at', { withTimezone: true }).defaultNow(),
   userAgent: text('user_agent'),
   ipHash: text('ip_hash'),
