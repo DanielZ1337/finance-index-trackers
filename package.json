@@ -24,6 +24,7 @@
     "db:test-data": "bun run lib/db/test-data.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.1",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-dialog": "^1.1.14",
