@@ -8,6 +8,17 @@ export const auth = betterAuth({
     database: drizzleAdapter(db, {
         provider: "pg", // PostgreSQL
     }),
+    baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL,
+    trustedOrigins: [
+        process.env.BETTER_AUTH_URL || "http://localhost:3000",
+        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
+        // GitHub's domain for OAuth callbacks
+        "https://github.com",
+        // Add your production domain when deploying
+        ...(process.env.NODE_ENV === "production" && process.env.VERCEL_URL
+            ? [`https://${process.env.VERCEL_URL}`]
+            : []),
+    ],
     emailAndPassword: {
         enabled: true,
     },
@@ -15,6 +26,7 @@ export const auth = betterAuth({
         github: {
             clientId: process.env.GITHUB_CLIENT_ID as string,
             clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+            redirectURI: `${process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback/github`,
         },
     },
     session: {
